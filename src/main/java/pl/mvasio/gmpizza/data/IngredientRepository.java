@@ -1,13 +1,14 @@
 package pl.mvasio.gmpizza.data;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
-import pl.mvasio.gmpizza.domain.Ingredient;
+import pl.mvasio.gmpizza.domain.ingredient.Ingredient;
 
-import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface IngredientRepository extends MongoRepository<Ingredient, String> {
-    List<Ingredient> findAllIngredientsByType(String type);
-    Ingredient findIngredientByName(String name);
+public interface IngredientRepository extends CrudRepository<Ingredient, Long> {
+    Iterable<Ingredient> findAllIngredientsByType(Ingredient.Type type);
+    Optional<Ingredient> findIngredientByName(String name);
 }
+

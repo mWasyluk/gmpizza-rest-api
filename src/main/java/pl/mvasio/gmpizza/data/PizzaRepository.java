@@ -1,10 +1,11 @@
 package pl.mvasio.gmpizza.data;
 
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
-import pl.mvasio.gmpizza.domain.Pizza;
+import pl.mvasio.gmpizza.domain.pizza.Pizza;
+
+import java.util.UUID;
 
 @Repository
-public interface PizzaRepository extends MongoRepository<Pizza, String> {
-    Iterable<Pizza> findAllPizzasByUserIdOrderByCreateDateDesc(String id);
+public interface PizzaRepository extends CrudRepository<Pizza, UUID> {
 }

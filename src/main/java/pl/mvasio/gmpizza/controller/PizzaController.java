@@ -1,44 +1,54 @@
 package pl.mvasio.gmpizza.controller;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.Errors;
-import org.springframework.validation.ObjectError;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pl.mvasio.gmpizza.data.PizzaRepository;
-import pl.mvasio.gmpizza.domain.Pizza;
+import pl.mvasio.gmpizza.domain.hateoas.LinkService;
+import pl.mvasio.gmpizza.domain.hateoas.PizzaModelAssembler;
+import pl.mvasio.gmpizza.domain.pizza.Pizza;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
-@RequestMapping(value = "/pizzas", produces = "application/json")
+@RequestMapping(value = "/pizzas",
+        produces = MediaType.APPLICATION_JSON_VALUE)
 public class PizzaController {
     @Autowired
     private PizzaRepository pizzaRepository;
 
     @GetMapping
-    public ResponseEntity<?> getAllPizzas(){
-        return new ResponseEntity<>(pizzaRepository.findAll(), HttpStatus.OK);
+    public ResponseEntity<?> getAllRegularPizzas(){
+        CollectionModel<Pizza> collectionModel = new PizzaModelAssembler().toCollectionModel(pizzaRepository.findAll());
+        collectionModel.add(LinkService.ALL_REGULAR_PIZZAS);
+        return new ResponseEntity<>(collectionModel, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getPizzaById(@PathVariable String id){
-        Optional<Pizza> optional = pizzaRepository.findById(id);
-        return optional.map(pizza -> new ResponseEntity<>(pizza, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<?> getPizzaById(@PathVariable UUID id){
+        Optional<Pizza> optionalRegularPizza = pizzaRepository.findById(id);
+        if (optionalRegularPizza.isPresent()) {
+            RepresentationModel<Pizza> pizzaRepresentationModel = new PizzaModelAssembler().toModel(optionalRegularPizza.get());
+            pizzaRepresentationModel.add(LinkService.ALL_REGULAR_PIZZAS);
+            return new ResponseEntity<>(pizzaRepresentationModel, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping
-    public ResponseEntity<?> postPizza(@Validated @RequestBody Pizza pizza, Errors errors){
-        if (errors.hasErrors()){
-            return new ResponseEntity<>(errors.getAllErrors(), HttpStatus.BAD_REQUEST);
-        }
-        else {
-            pizzaRepository.save(pizza);
-            return new ResponseEntity<>(pizza, HttpStatus.CREATED);
-        }
+    @PostMapping (consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> postPizza(@RequestBody Pizza pizza) {
+        Pizza entity = new Pizza(pizza.getName(), pizza.getDescription(), pizza.getPrice(), pizza.getSize(),
+                pizza.getPie(), pizza.getBaseSauce(), pizza.getIngredients());
+        RepresentationModel<Pizza> pizzaRepresentationModel;
+        pizzaRepresentationModel = new PizzaModelAssembler().toModel(pizzaRepository.save(entity));
+        pizzaRepresentationModel.add(LinkService.ALL_REGULAR_PIZZAS);
+
+        return new ResponseEntity<>(pizzaRepresentationModel, HttpStatus.CREATED);
     }
 }

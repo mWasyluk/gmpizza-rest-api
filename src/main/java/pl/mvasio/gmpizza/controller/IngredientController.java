@@ -1,42 +1,77 @@
 package pl.mvasio.gmpizza.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pl.mvasio.gmpizza.data.IngredientRepository;
-import pl.mvasio.gmpizza.domain.Ingredient;
+import pl.mvasio.gmpizza.domain.hateoas.IngredientModelAssembler;
+import pl.mvasio.gmpizza.domain.hateoas.LinkService;
+import pl.mvasio.gmpizza.domain.ingredient.Ingredient;
 
-import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping(value = "/ingredients", produces = "application/json")
+@RequestMapping(value = "/ingredients", produces = MediaType.APPLICATION_JSON_VALUE)
 public class IngredientController {
     @Autowired
     private IngredientRepository ingredientRepository;
 
     @GetMapping
-    public List<Ingredient> getIngredients( @RequestParam(name = "type", required = false) String type ){
+    public ResponseEntity<?> getAllIngredients( @RequestParam(name = "type", required = false) String type ){
         if (type != null){
-            return ingredientRepository.findAllIngredientsByType(type.toUpperCase());
+            Iterable<Ingredient> allIngredientsByType = ingredientRepository.findAllIngredientsByType(Ingredient.Type.valueOf(type.toUpperCase()));
+            CollectionModel<Ingredient> collectionModel = new IngredientModelAssembler().toCollectionModel(allIngredientsByType);
+            collectionModel.add(LinkService.ALL_INGREDIENTS);
+            return new ResponseEntity<>( collectionModel, HttpStatus.OK );
         }
-        return ingredientRepository.findAll();
+        Iterable<Ingredient> allIngredients = ingredientRepository.findAll();
+        CollectionModel<Ingredient> collectionModel = new IngredientModelAssembler().toCollectionModel(allIngredients);
+        collectionModel.add(LinkService.ALL_INGREDIENTS);
+
+        return new ResponseEntity<>( collectionModel, HttpStatus.OK );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Ingredient> getIngredientById(@PathVariable("id") String id){
-        return ingredientRepository.findById(id)
-                .map(ingredient -> new ResponseEntity<>(ingredient, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
+    public ResponseEntity<?> getIngredientById(@PathVariable("id") long id){
+        Optional<Ingredient> optionalIngredient = ingredientRepository.findById(id);
+        if (optionalIngredient.isPresent()){
+            RepresentationModel<Ingredient> representationModel = new IngredientModelAssembler().toModel(optionalIngredient.get());
+            representationModel.add(LinkService.ALL_INGREDIENTS);
+            return new ResponseEntity<>(representationModel, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping(consumes = "application/json")
-    public ResponseEntity<Ingredient> postIngredient(@Validated @RequestBody Ingredient ingredient) {
-        if (ingredientRepository.findIngredientByName(ingredient.getName()) == null){
-            ingredientRepository.save(ingredient);
-            return new ResponseEntity<>(ingredient, HttpStatus.CREATED);
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> postIngredient(@RequestBody Ingredient ingredient) {
+        Optional<Ingredient> optionalById = ingredientRepository.findById(ingredient.getId());
+        if (!optionalById.isPresent()){
+            Ingredient save = ingredientRepository.save(ingredient);
+            RepresentationModel<Ingredient> representationModel = new IngredientModelAssembler().toModel(save);
+            representationModel.add(LinkService.ALL_INGREDIENTS);
+            return new ResponseEntity<>(representationModel, HttpStatus.CREATED);
         }
-        return new ResponseEntity<>(ingredientRepository.findIngredientByName(ingredient.getName()), HttpStatus.CONFLICT);
+        RepresentationModel<Ingredient> representationModel = new IngredientModelAssembler().toModel(optionalById.get());
+        representationModel.add(LinkService.ALL_INGREDIENTS);
+        return new ResponseEntity<>(representationModel, HttpStatus.CONFLICT);
+    }
+
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> putIngredient(@PathVariable long id, @RequestBody Ingredient ingredient){
+        Optional<Ingredient> optionalById = ingredientRepository.findById(id);
+        ingredient.setId(id);
+        if (optionalById.isPresent()){
+            Ingredient save = ingredientRepository.save(ingredient);
+            RepresentationModel<Ingredient> representationModel = new IngredientModelAssembler().toModel(save);
+            representationModel.add(LinkService.ALL_INGREDIENTS);
+            return new ResponseEntity<>(representationModel, HttpStatus.CREATED);
+        }
+        RepresentationModel<Ingredient> representationModel = new IngredientModelAssembler().toModel(ingredient);
+        representationModel.add(LinkService.ALL_INGREDIENTS);
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 }

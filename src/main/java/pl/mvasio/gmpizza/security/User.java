@@ -4,18 +4,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.validator.constraints.UniqueElements;
-import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.persistence.*;
 import java.util.Collection;
+import java.util.UUID;
 
 @Getter
 @RequiredArgsConstructor
 @NoArgsConstructor
-@Document("Users")
+@Entity
+@Table(name = "Users")
 public class User implements UserDetails {
+    @Id
+    @GeneratedValue(generator = "UUID")
+    private UUID id;
     @NonNull
     private String username;
     @NonNull
