@@ -45,9 +45,14 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable().cors();
+//        //TODO: remove this line
+//        http.headers().frameOptions().disable();
         http.authorizeRequests()
                 .antMatchers("/ingredients").permitAll()
                 .antMatchers("/images/*").permitAll()
+//                //TODO: remove those lines
+//                .antMatchers("/h2-console/**", "/h2-console").permitAll()
+//                .antMatchers("/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin().permitAll();

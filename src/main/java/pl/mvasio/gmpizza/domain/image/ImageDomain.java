@@ -23,4 +23,5 @@ public class ImageDomain extends RepresentationModel<ImageDomain> {
     private String name;
     @NonNull
     private String mediaType;
+    private byte[] bytes;
 }

@@ -1,5 +1,6 @@
 package pl.mvasio.gmpizza.data;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -16,6 +17,7 @@ import java.util.Collections;
 
 @Service
 @Profile("dev-pl")
+@Slf4j
 public class DataLoader implements ApplicationRunner {
     @Autowired
     private IngredientRepository ingredientRepository;
@@ -114,7 +116,9 @@ public class DataLoader implements ApplicationRunner {
                         MediaType.IMAGE_JPEG_VALUE));
 
         pizzaRepository.saveAll(Arrays.asList(test, klasyczna, oKurcze, hawajska));
+        log.info("Pizzas data uploaded.");
 
         userRepository.save(new User("user", "pass"));
+        log.info("User data uploaded.");
     }
 }
